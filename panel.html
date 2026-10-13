@@ -1,0 +1,46 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gemini Sidekick</title>
+  <link rel="stylesheet" href="panel.css">
+</head>
+<body>
+  <header>
+    <strong>Gemini Sidekick</strong>
+    <span class="spacer"></span>
+    <button id="newChat" title="Start a new conversation">New chat</button>
+    <button id="settingsBtn" title="Settings">⚙</button>
+  </header>
+
+  <section id="settings" hidden>
+    <label>API key (from Google AI Studio)
+      <input id="apiKey" type="password" placeholder="AIza..." autocomplete="off">
+    </label>
+    <label>Model
+      <input id="model" type="text" placeholder="gemini-2.5-flash">
+    </label>
+    <button id="saveSettings">Save</button>
+    <p class="hint">The key is stored locally in this browser and only sent to Google's Gemini API.</p>
+  </section>
+
+  <section id="context">
+    <div class="tabline">Tab: <span id="tabInfo">…</span> <button id="refresh" title="Re-check the current tab">↻</button></div>
+    <div class="toggles">
+      <label><input type="checkbox" id="useSelection" checked> Selection</label>
+      <label><input type="checkbox" id="usePage"> Page text</label>
+      <label><input type="checkbox" id="useShot"> Screenshot</label>
+      <label><input type="checkbox" id="usePdf"> PDF</label>
+    </div>
+  </section>
+
+  <main id="log"></main>
+
+  <footer>
+    <textarea id="input" rows="3" placeholder="Ask about what you're looking at… (Enter to send, Shift+Enter for newline)"></textarea>
+    <button id="send">Send</button>
+  </footer>
+
+  <script src="panel.js"></script>
+</body>
+</html>
