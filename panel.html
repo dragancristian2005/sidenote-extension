@@ -17,14 +17,16 @@
     <label>API key (from Google AI Studio)
       <input id="apiKey" type="password" placeholder="AIza..." autocomplete="off">
     </label>
-    <label>Model
-      <input id="model" type="text" placeholder="gemini-2.5-flash">
+    <button id="saveSettings">Save key</button>
+    <label>Add a model ID
+      <span class="row"><input id="modelInput" type="text" placeholder="exact model ID from AI Studio"><button id="addModel">Add</button></span>
     </label>
-    <button id="saveSettings">Save</button>
+    <ul id="modelList"></ul>
     <p class="hint">The key is stored locally in this browser and only sent to Google's Gemini API.</p>
   </section>
 
   <section id="context">
+    <div class="tabline modelline">Model: <select id="modelSelect"></select></div>
     <div class="tabline">Tab: <span id="tabInfo">…</span> <button id="refresh" title="Re-check the current tab">↻</button></div>
     <div class="toggles">
       <label><input type="checkbox" id="useSelection" checked> Selection</label>

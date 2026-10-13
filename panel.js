@@ -1,5 +1,4 @@
 const $ = (id) => document.getElementById(id);
-const DEFAULT_MODEL = "gemini-2.5-flash";
 const MAX_PAGE_CHARS = 200000;
 const MAX_PDF_BYTES = 15 * 1024 * 1024; // inline request limit is ~20MB incl. base64 overhead
 
@@ -7,19 +6,67 @@ let history = []; // Gemini "contents" array
 let busy = false;
 
 // ---------- settings ----------
-async function loadSettings() {
-  const { apiKey = "", model = DEFAULT_MODEL } = await chrome.storage.local.get(["apiKey", "model"]);
-  $("apiKey").value = apiKey;
-  $("model").value = model;
-  if (!apiKey) $("settings").hidden = false;
+// Models are whatever IDs the user adds; there are no built-in defaults.
+let models = [];
+let selectedModel = "";
+
+async function saveModels() {
+  await chrome.storage.local.set({ models, model: selectedModel });
+  renderModels();
 }
+
+function renderModels() {
+  const sel = $("modelSelect");
+  sel.textContent = "";
+  if (!models.length) {
+    sel.add(new Option("(add a model in settings)", ""));
+  }
+  for (const m of models) sel.add(new Option(m, m));
+  sel.value = selectedModel;
+
+  const list = $("modelList");
+  list.textContent = "";
+  for (const m of models) {
+    const li = document.createElement("li");
+    const span = document.createElement("span");
+    span.textContent = m;
+    const del = document.createElement("button");
+    del.textContent = "Remove";
+    del.onclick = () => {
+      models = models.filter((x) => x !== m);
+      if (selectedModel === m) selectedModel = models[0] || "";
+      saveModels();
+    };
+    li.append(span, del);
+    list.appendChild(li);
+  }
+}
+
+async function loadSettings() {
+  const s = await chrome.storage.local.get(["apiKey", "models", "model"]);
+  models = s.models || [];
+  selectedModel = models.includes(s.model) ? s.model : models[0] || "";
+  $("apiKey").value = s.apiKey || "";
+  renderModels();
+  if (!s.apiKey || !models.length) $("settings").hidden = false;
+}
+
 $("settingsBtn").onclick = () => ($("settings").hidden = !$("settings").hidden);
 $("saveSettings").onclick = async () => {
-  await chrome.storage.local.set({
-    apiKey: $("apiKey").value.trim(),
-    model: $("model").value.trim() || DEFAULT_MODEL,
-  });
-  $("settings").hidden = true;
+  await chrome.storage.local.set({ apiKey: $("apiKey").value.trim() });
+};
+$("addModel").onclick = () => {
+  const id = $("modelInput").value.trim().replace(/^models\//, "");
+  if (!id) return;
+  if (!models.includes(id)) models.push(id);
+  selectedModel = id;
+  $("modelInput").value = "";
+  saveModels();
+};
+$("modelInput").addEventListener("keydown", (e) => e.key === "Enter" && $("addModel").click());
+$("modelSelect").onchange = () => {
+  selectedModel = $("modelSelect").value;
+  saveModels();
 };
 
 // ---------- tab helpers ----------
@@ -216,10 +263,11 @@ async function send() {
   if (busy) return;
   const question = $("input").value.trim();
   if (!question) return;
-  const { apiKey, model = DEFAULT_MODEL } = await chrome.storage.local.get(["apiKey", "model"]);
-  if (!apiKey) {
+  const { apiKey } = await chrome.storage.local.get("apiKey");
+  const model = selectedModel;
+  if (!apiKey || !model) {
     $("settings").hidden = false;
-    return addMsg("error", "Add your API key in settings first.");
+    return addMsg("error", "Add your API key and at least one model ID in settings first.");
   }
 
   busy = true;
@@ -230,7 +278,7 @@ async function send() {
     addMsg("user", question, notes.length ? "Attached: " + notes.join(", ") : "No context attached");
     const turn = { role: "user", parts: [...parts, { text: question }] };
     const body = addMsg("model", "…", model);
-    const reply = await streamGemini(apiKey, model || DEFAULT_MODEL, [...history, turn], (t) => {
+    const reply = await streamGemini(apiKey, model, [...history, turn], (t) => {
       body.textContent = t;
       $("log").scrollTop = $("log").scrollHeight;
     });
