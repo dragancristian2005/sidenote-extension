@@ -196,6 +196,65 @@ async function gatherContext() {
   return { parts, notes };
 }
 
+// ---------- minimal markdown ----------
+function esc(s) { return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+function inline(s) {
+  const codes = [];
+  s = s.replace(/`([^`]+)`/g, (_, c) => (codes.push(c), "\u0000" + (codes.length - 1) + "\u0000"));
+  s = esc(s)
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*\s][^*]*)\*/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  return s.replace(/\u0000(\d+)\u0000/g, (_, i) => "<code>" + esc(codes[i]) + "</code>");
+}
+function renderMarkdown(src) {
+  const lines = src.replace(/\r/g, "").split("\n");
+  let out = "", i = 0, para = [];
+  const flush = () => { if (para.length) out += "<p>" + inline(para.join("\n")).replace(/\n/g, "<br>") + "</p>"; para = []; };
+  while (i < lines.length) {
+    const l = lines[i];
+    let m;
+    if ((m = l.match(/^```/))) {
+      flush();
+      const code = [];
+      for (i++; i < lines.length && !/^```/.test(lines[i]); i++) code.push(lines[i]);
+      i++;
+      out += '<div class="codeblock"><button class="copy">Copy</button><pre><code>' + esc(code.join("\n")) + "</code></pre></div>";
+    } else if ((m = l.match(/^(#{1,4})\s+(.*)/))) {
+      flush(); out += "<h" + m[1].length + ">" + inline(m[2]) + "</h" + m[1].length + ">"; i++;
+    } else if (/^\s*([-*+]|\d+\.)\s+/.test(l)) {
+      flush();
+      const ord = /^\s*\d+\./.test(l), tag = ord ? "ol" : "ul";
+      out += "<" + tag + ">";
+      while (i < lines.length && /^\s*([-*+]|\d+\.)\s+/.test(lines[i])) {
+        out += "<li>" + inline(lines[i].replace(/^\s*([-*+]|\d+\.)\s+/, "")) + "</li>"; i++;
+      }
+      out += "</" + tag + ">";
+    } else if (/^>\s?/.test(l)) {
+      flush(); const q = [];
+      while (i < lines.length && /^>\s?/.test(lines[i])) q.push(lines[i++].replace(/^>\s?/, ""));
+      out += "<blockquote>" + inline(q.join("\n")).replace(/\n/g, "<br>") + "</blockquote>";
+    } else if (/^---+\s*$/.test(l)) {
+      flush(); out += "<hr>"; i++;
+    } else if (!l.trim()) {
+      flush(); i++;
+    } else { para.push(l); i++; }
+  }
+  flush();
+  return out;
+}
+function setBody(body, text) {
+  if (body.classList.contains("md")) body.innerHTML = renderMarkdown(text);
+  else body.textContent = text;
+}
+$("log").addEventListener("click", (e) => {
+  const b = e.target.closest(".copy");
+  if (!b) return;
+  navigator.clipboard.writeText(b.nextElementSibling.textContent);
+  b.textContent = "Copied";
+  setTimeout(() => (b.textContent = "Copy"), 1200);
+});
+
 // ---------- chat UI ----------
 function addMsg(cls, text, meta) {
   const div = document.createElement("div");
@@ -207,7 +266,9 @@ function addMsg(cls, text, meta) {
     div.appendChild(m);
   }
   const body = document.createElement("div");
-  body.textContent = text;
+  if (cls === "model") body.classList.add("md");
+  if (text === "…") body.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
+  else setBody(body, text);
   div.appendChild(body);
   $("log").appendChild(div);
   $("log").scrollTop = $("log").scrollHeight;
@@ -273,13 +334,14 @@ async function send() {
   busy = true;
   $("send").disabled = true;
   $("input").value = "";
+  $("input").style.height = "auto";
   try {
     const { parts, notes } = await gatherContext();
     addMsg("user", question, notes.length ? "Attached: " + notes.join(", ") : "No context attached");
     const turn = { role: "user", parts: [...parts, { text: question }] };
     const body = addMsg("model", "…", model);
     const reply = await streamGemini(apiKey, model, [...history, turn], (t) => {
-      body.textContent = t;
+      setBody(body, t);
       $("log").scrollTop = $("log").scrollHeight;
     });
     history.push(turn, { role: "model", parts: [{ text: reply }] });
@@ -293,6 +355,11 @@ async function send() {
 }
 
 $("send").onclick = send;
+$("input").addEventListener("input", () => {
+  const t = $("input");
+  t.style.height = "auto";
+  t.style.height = Math.min(t.scrollHeight, 140) + "px";
+});
 $("input").addEventListener("keydown", (e) => {
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
