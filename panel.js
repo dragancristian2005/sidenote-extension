@@ -509,6 +509,13 @@ $("input").addEventListener("keydown", (e) => {
   }
 });
 
+// Let the background know this panel is open (enables the toggle shortcut).
+const bgPort = chrome.runtime.connect({ name: "panel" });
+chrome.windows.getCurrent().then((w) => bgPort.postMessage({ windowId: w.id }));
+bgPort.onMessage.addListener((msg) => {
+  if (msg?.type === "close") window.close();
+});
+$("input").focus();
 loadSettings();
 loadChats();
 refreshTabInfo();
