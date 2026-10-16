@@ -95,6 +95,23 @@ $("refresh").onclick = refreshTabInfo;
 chrome.tabs.onActivated.addListener(refreshTabInfo);
 chrome.tabs.onUpdated.addListener((_id, info) => info.status === "complete" && refreshTabInfo());
 
+// Auto-tick "Selection" when text gets selected on the page while the panel is open
+// (and untick it again when the selection goes away, unless the user touched the pill).
+let selAuto = false;
+$("useSelection").addEventListener("change", () => (selAuto = false));
+async function pollSelection() {
+  if (document.hidden || busy) return;
+  try {
+    const tab = await getTargetTab();
+    if (!tab) return;
+    const has = (await runInTab(tab, readSelection, true)).some(Boolean);
+    const box = $("useSelection");
+    if (has && !box.checked) { box.checked = true; selAuto = true; }
+    else if (!has && box.checked && selAuto) { box.checked = false; selAuto = false; }
+  } catch {} // restricted pages (brave://, Web Store) can't be scripted
+}
+setInterval(pollSelection, 1000);
+
 // ---------- context gathering ----------
 async function runInTab(tab, func, allFrames = false) {
   const res = await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames }, func });
