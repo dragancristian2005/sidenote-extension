@@ -15,3 +15,7 @@ Context you can attach per message: selected text, page text, a screenshot of th
 - Falls back to a popup window if the browser lacks the `sidePanel` API.
 - PDFs are sent inline (limit 15 MB). The built-in PDF viewer's text selection isn't readable, so the whole PDF is sent.
 - Models are only the IDs you add yourself; remove them in settings.
+
+## Built-in instructions
+
+The `instructions/*.md` files are sent to Gemini as the system instruction on every request (environment, what it can/can't see, answer style). Edit them to change how Gemini behaves, and add new files to `INSTRUCTION_FILES` in `panel.js`.

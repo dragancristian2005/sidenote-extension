@@ -282,14 +282,24 @@ $("newChat").onclick = () => {
 };
 
 // ---------- Gemini call ----------
+const INSTRUCTION_FILES = ["01-environment.md", "02-capabilities.md", "03-style.md"];
+let systemPromise;
+function loadSystemInstruction() {
+  systemPromise ||= Promise.all(
+    INSTRUCTION_FILES.map((f) => fetch(chrome.runtime.getURL("instructions/" + f)).then((r) => r.text()))
+  ).then((t) => t.join("\n\n")).catch(() => "");
+  return systemPromise;
+}
+
 async function streamGemini(apiKey, model, contents, onText, onRetry) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
+  const system = await loadSystemInstruction();
   let resp;
   for (let attempt = 0; ; attempt++) {
     resp = await fetch(url, {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({ contents }),
+      body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: system }] } }),
     });
     if (resp.ok) break;
     let msg = "HTTP " + resp.status;
