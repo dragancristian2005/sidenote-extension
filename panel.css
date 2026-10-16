@@ -150,3 +150,14 @@ footer { padding: 8px 14px 14px; }
 }
 #send:hover { filter: brightness(1.08); }
 #send:disabled { opacity: .35; cursor: default; }
+
+#history { margin: 4px 14px 8px; padding: 6px; background: var(--surface); border-radius: var(--radius); max-height: 40vh; overflow-y: auto; }
+#chatList { list-style: none; margin: 0; padding: 0; }
+#chatList:empty::before { content: "No saved chats yet."; display: block; padding: 8px; color: var(--muted); font-size: 12.5px; }
+#chatList li { display: flex; align-items: center; border-radius: 8px; }
+#chatList li:hover, #chatList li.active { background: var(--surface-2); }
+#chatList .open { flex: 1; min-width: 0; text-align: left; padding: 7px 10px; }
+#chatList .open b { display: block; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#chatList .open small { color: var(--muted); font-size: 11px; }
+#chatList .del { color: var(--muted); padding: 4px 9px; border-radius: 6px; }
+#chatList .del:hover { color: var(--danger); background: var(--danger-soft); }

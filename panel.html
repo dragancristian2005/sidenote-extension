@@ -9,9 +9,14 @@
   <header>
     <strong>Gemini Sidekick</strong>
     <span class="spacer"></span>
+    <button id="historyBtn" title="Past chats">History</button>
     <button id="newChat" title="Start a new conversation">New chat</button>
     <button id="settingsBtn" title="Settings">⚙</button>
   </header>
+
+  <section id="history" hidden>
+    <ul id="chatList"></ul>
+  </section>
 
   <section id="settings" hidden>
     <label>API key (from Google AI Studio)

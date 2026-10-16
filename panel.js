@@ -279,9 +279,89 @@ function addMsg(cls, text, meta) {
   return body;
 }
 
-$("newChat").onclick = () => {
+// ---------- saved chats (text only; screenshots/PDFs are not stored) ----------
+let chats = [];
+let current = null; // created lazily on the first message
+
+function persistChats() {
+  return chrome.storage.local.set({ chats, lastChat: current?.id || null });
+}
+
+function startNewChat() {
+  current = null;
   history = [];
   $("log").textContent = "";
+  renderChatList();
+  persistChats();
+}
+
+function openChat(id) {
+  const c = chats.find((x) => x.id === id);
+  if (!c || busy) return;
+  current = c;
+  history = [...c.history];
+  $("log").textContent = "";
+  for (const m of c.msgs) addMsg(m.cls, m.text, m.meta);
+  $("history").hidden = true;
+  renderChatList();
+  persistChats();
+}
+
+function renderChatList() {
+  const list = $("chatList");
+  list.textContent = "";
+  for (const c of chats) {
+    const li = document.createElement("li");
+    if (c === current) li.className = "active";
+    const open = document.createElement("button");
+    open.className = "open";
+    const t = document.createElement("b");
+    t.textContent = c.title;
+    const d = document.createElement("small");
+    d.textContent = new Date(c.updated).toLocaleString([], { dateStyle: "medium", timeStyle: "short" });
+    open.append(t, d);
+    open.onclick = () => openChat(c.id);
+    const del = document.createElement("button");
+    del.className = "del";
+    del.textContent = "✕";
+    del.title = "Delete this chat";
+    del.onclick = () => {
+      if (busy) return;
+      chats = chats.filter((x) => x !== c);
+      if (c === current) startNewChat();
+      else { renderChatList(); persistChats(); }
+    };
+    li.append(open, del);
+    list.appendChild(li);
+  }
+}
+
+function saveTurn(question, notes, meta, reply, model) {
+  if (!current) {
+    current = { id: Date.now().toString(36), title: question.replace(/\s+/g, " ").slice(0, 60), msgs: [], history: [], updated: 0 };
+    chats.unshift(current);
+  }
+  current.msgs.push({ cls: "user", text: question, meta }, { cls: "model", text: reply, meta: model });
+  current.history.push(
+    { role: "user", parts: [{ text: question + (notes.length ? `\n\n[Attached to that message: ${notes.join(", ")}]` : "") }] },
+    { role: "model", parts: [{ text: reply }] }
+  );
+  current.updated = Date.now();
+  chats = [current, ...chats.filter((x) => x !== current)];
+  renderChatList();
+  persistChats();
+}
+
+async function loadChats() {
+  const { chats: saved = [], lastChat } = await chrome.storage.local.get(["chats", "lastChat"]);
+  chats = saved;
+  renderChatList();
+  if (lastChat) openChat(lastChat);
+}
+
+$("historyBtn").onclick = () => ($("history").hidden = !$("history").hidden);
+$("newChat").onclick = () => {
+  if (!busy) startNewChat();
 };
 
 // ---------- Gemini call ----------
@@ -361,7 +441,8 @@ async function send() {
   $("input").style.height = "auto";
   try {
     const { parts, notes } = await gatherContext();
-    addMsg("user", question, notes.length ? "Attached: " + notes.join(", ") : "No context attached");
+    const userMeta = notes.length ? "Attached: " + notes.join(", ") : "No context attached";
+    addMsg("user", question, userMeta);
     const turn = { role: "user", parts: [...parts, { text: question }] };
     const body = addMsg("model", "…", model);
     const reply = await streamGemini(apiKey, model, [...history, turn], (t) => {
@@ -369,6 +450,7 @@ async function send() {
       $("log").scrollTop = $("log").scrollHeight;
     }, (msg) => (body.textContent = msg));
     history.push(turn, { role: "model", parts: [{ text: reply }] });
+    saveTurn(question, notes, userMeta, reply, model);
   } catch (e) {
     addMsg("error", "Error: " + e.message);
   } finally {
@@ -411,4 +493,5 @@ $("input").addEventListener("keydown", (e) => {
 });
 
 loadSettings();
+loadChats();
 refreshTabInfo();
