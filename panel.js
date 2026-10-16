@@ -162,6 +162,7 @@ async function gatherContext() {
   if ($("useShot").checked) {
     try {
       const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg", quality: 80 });
+      parts.push({ text: "The following image is a screenshot of the user's currently visible browser tab. You can see it; use it to answer." });
       parts.push({ inlineData: { mimeType: "image/jpeg", data: dataUrl.split(",")[1] } });
       notes.push("screenshot");
     } catch (e) {
