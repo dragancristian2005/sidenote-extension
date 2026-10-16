@@ -339,6 +339,8 @@ async function send() {
     return addMsg("error", "Add your API key and at least one model ID in settings first.");
   }
 
+  if (sent[sent.length - 1] !== question) sent.push(question);
+  recall = -1;
   busy = true;
   $("send").disabled = true;
   $("input").value = "";
@@ -362,6 +364,24 @@ async function send() {
   }
 }
 
+// Up/Down arrow recalls previously sent messages (like a shell).
+const sent = [];
+let recall = -1, draft = "";
+function recallMsg(e) {
+  const t = $("input");
+  if (e.key === "ArrowUp" && sent.length && t.selectionStart === t.selectionEnd && !t.value.slice(0, t.selectionStart).includes("\n")) {
+    if (recall === -1) { draft = t.value; recall = sent.length - 1; }
+    else if (recall > 0) recall--;
+    else return;
+  } else if (e.key === "ArrowDown" && recall !== -1 && !t.value.slice(t.selectionEnd).includes("\n")) {
+    recall = recall < sent.length - 1 ? recall + 1 : -1;
+  } else return;
+  e.preventDefault();
+  t.value = recall === -1 ? draft : sent[recall];
+  t.setSelectionRange(t.value.length, t.value.length);
+  t.dispatchEvent(new Event("input"));
+}
+
 $("send").onclick = send;
 $("input").addEventListener("input", () => {
   const t = $("input");
@@ -369,6 +389,7 @@ $("input").addEventListener("input", () => {
   t.style.height = Math.min(t.scrollHeight, 140) + "px";
 });
 $("input").addEventListener("keydown", (e) => {
+  recallMsg(e);
   if (e.key === "Enter" && !e.shiftKey) {
     e.preventDefault();
     send();
