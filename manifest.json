@@ -10,7 +10,7 @@
   "commands": {
     "focus-input": {
       "suggested_key": { "default": "Alt+G", "mac": "Alt+G" },
-      "description": "Toggle Gemini Sidekick (open + focus the message box, or close)"
+      "description": "Focus the Gemini Sidekick message box"
     }
   },
   "side_panel": { "default_path": "panel.html" }

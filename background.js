@@ -29,17 +29,14 @@ chrome.runtime.onConnect.addListener((port) => {
   });
 });
 
-// Keyboard shortcut: toggle. Closed -> open the panel and focus the message box;
-// open -> close it.
+// Keyboard shortcut "focus-input": only focuses the message box. If the panel is
+// closed it has to be opened first (it focuses the box itself on load).
+// Open/close is the toolbar button's own shortcut ("Activate the extension").
 chrome.commands.onCommand.addListener(async (command, tab) => {
   if (command !== "focus-input") return;
   const win = tab?.windowId ?? (await chrome.windows.getLastFocused({ windowTypes: ["normal"] })).id;
   const port = openPanels.get(win);
-  if (port) {
-    if (chrome.sidePanel?.close) await chrome.sidePanel.close({ windowId: win }).catch(() => port.postMessage({ type: "close" }));
-    else port.postMessage({ type: "close" });
-    return;
-  }
+  if (port) return port.postMessage({ type: "focus-input" });
   if (hasSidePanel) {
     try {
       await chrome.sidePanel.open({ windowId: win });

@@ -513,7 +513,7 @@ $("input").addEventListener("keydown", (e) => {
 const bgPort = chrome.runtime.connect({ name: "panel" });
 chrome.windows.getCurrent().then((w) => bgPort.postMessage({ windowId: w.id }));
 bgPort.onMessage.addListener((msg) => {
-  if (msg?.type === "close") window.close();
+  if (msg?.type === "focus-input") { window.focus(); $("input").focus(); }
 });
 $("input").focus();
 loadSettings();
