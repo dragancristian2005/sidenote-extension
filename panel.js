@@ -281,17 +281,25 @@ $("newChat").onclick = () => {
 };
 
 // ---------- Gemini call ----------
-async function streamGemini(apiKey, model, contents, onText) {
+async function streamGemini(apiKey, model, contents, onText, onRetry) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
-  const resp = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-    body: JSON.stringify({ contents }),
-  });
-  if (!resp.ok) {
+  let resp;
+  for (let attempt = 0; ; attempt++) {
+    resp = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
+      body: JSON.stringify({ contents }),
+    });
+    if (resp.ok) break;
     let msg = "HTTP " + resp.status;
     try { msg = (await resp.json()).error?.message || msg; } catch {}
-    throw new Error(msg);
+    const transient = [429, 500, 503, 504].includes(resp.status);
+    if (!transient || attempt >= 4) throw new Error(msg);
+    const wait = 2 * 2 ** attempt;
+    for (let s = wait; s > 0; s--) {
+      onRetry?.(`Model is busy, retrying in ${s}s (${attempt + 1}/4)…`);
+      await new Promise((r) => setTimeout(r, 1000));
+    }
   }
   const reader = resp.body.getReader();
   const dec = new TextDecoder();
@@ -343,7 +351,7 @@ async function send() {
     const reply = await streamGemini(apiKey, model, [...history, turn], (t) => {
       setBody(body, t);
       $("log").scrollTop = $("log").scrollHeight;
-    });
+    }, (msg) => (body.textContent = msg));
     history.push(turn, { role: "model", parts: [{ text: reply }] });
   } catch (e) {
     addMsg("error", "Error: " + e.message);
