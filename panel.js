@@ -166,7 +166,10 @@ async function gatherContext() {
       parts.push({ inlineData: { mimeType: "image/jpeg", data: dataUrl.split(",")[1] } });
       notes.push("screenshot");
     } catch (e) {
-      notes.push("screenshot failed: " + e.message);
+      const blocked = /activeTab|cannot access|permission/i.test(e.message);
+      notes.push(blocked
+        ? "screenshot blocked (brave:// pages, the New Tab page and the Web Store can't be captured; on a normal site, set the extension's Site access to 'On all sites' in brave://extensions)"
+        : "screenshot failed: " + e.message);
     }
   }
 
