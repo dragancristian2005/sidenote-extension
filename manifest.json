@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Gemini Sidekick",
+  "name": "Sidenote",
   "version": "0.1.0",
-  "description": "Chat with Gemini about your selection, the page, a screenshot, or the PDF in the current tab.",
+  "description": "Chat with your own AI model (Gemini, Claude, OpenAI…) about the current tab: selection, page, other tabs, screenshot or PDF.",
   "permissions": [
     "activeTab",
     "scripting",
@@ -19,7 +19,7 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Open Gemini Sidekick"
+    "default_title": "Open Sidenote"
   },
   "commands": {
     "focus-input": {
@@ -27,7 +27,7 @@
         "default": "Alt+G",
         "mac": "Alt+G"
       },
-      "description": "Focus the Gemini Sidekick message box"
+      "description": "Focus the Sidenote message box"
     }
   },
   "side_panel": {

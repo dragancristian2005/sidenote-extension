@@ -1,4 +1,4 @@
-# Gemini Sidekick
+# Sidenote
 
 Brave/Chrome (Manifest V3) extension: a side panel to chat with an AI model about what's in your current tab. Bring your own API key for Gemini, Claude (Anthropic), OpenAI, DeepSeek, Grok (xAI) or Qwen (DashScope).
 
@@ -41,4 +41,4 @@ Nothing is sent until you press send; then your message, the context you ticked 
 
 ## Built-in instructions
 
-The `instructions/*.md` files are sent to Gemini as the system instruction on every request (environment, what it can/can't see, answer style). Edit them to change how Gemini behaves, and add new files to `INSTRUCTION_FILES` in `panel.js`.
+The `instructions/*.md` files are sent to the model as the system instruction on every request (environment, what it can/can't see, answer style). Edit them to change how the model behaves, and add new files to `INSTRUCTION_FILES` in `panel.js`.
