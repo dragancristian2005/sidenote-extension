@@ -30,7 +30,7 @@ No site access is granted at install. The extension asks (once per site, remembe
 
 ## Privacy
 
-Nothing is sent until you press send; then your message, the context you ticked and the earlier messages go straight from your browser to the chosen provider with your own API key. There is no server or analytics of ours. API keys and saved chats (text only) are stored unencrypted in the browser's extension storage; screenshots and PDFs are never saved. What the provider does with the data (retention, training, human review, where it's processed) is governed by its own terms; the settings panel links to them. A short notice about this is shown on first use.
+Nothing is sent until you press send; then your message, the context you ticked and the earlier messages go straight from your browser to the chosen provider with your own API key. There is no server or analytics of ours. API keys and saved chats (text only) are stored unencrypted in the browser's extension storage; screenshots and PDFs are never saved. What the provider does with the data (retention, training, human review, where it's processed) is governed by its own terms; the settings panel links to them. A short notice about this is shown on first use. Full details: [PRIVACY.md](PRIVACY.md).
 
 ## Notes
 - Falls back to a popup window if the browser lacks the `sidePanel` API.
