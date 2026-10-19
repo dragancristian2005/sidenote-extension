@@ -1,5 +1,6 @@
 const $ = (id) => document.getElementById(id);
 const MAX_PAGE_CHARS = 200000;
+const MAX_EXTRA_TABS_CHARS = 400000; // total budget for other tabs, split evenly
 const MAX_PDF_BYTES = 15 * 1024 * 1024; // inline request limit is ~20MB incl. base64 overhead
 
 let history = []; // Gemini-style "contents" array (see providers.js)
@@ -167,6 +168,58 @@ async function pollSelection() {
 }
 setInterval(pollSelection, 1000);
 
+// ---------- extra tabs picker ----------
+const extraTabs = new Set(); // ids of other tabs whose text is attached to every message
+
+function updateTabsBtn() {
+  $("tabsBtn").textContent = (extraTabs.size ? `Tabs (${extraTabs.size})` : "Tabs") + (" ▾");
+  $("tabsBtn").classList.toggle("active", extraTabs.size > 0);
+}
+
+async function renderTabList() {
+  const wins = await chrome.windows.getAll({ populate: true });
+  const active = await getTargetTab();
+  const tabs = wins.filter((w) => w.type === "normal").flatMap((w) => w.tabs).filter((t) => /^(https?|file):/.test(t.url || ""));
+  for (const id of [...extraTabs]) if (!tabs.some((t) => t.id === id)) extraTabs.delete(id); // closed
+  const list = $("tabList");
+  list.textContent = "";
+  for (const t of tabs) {
+    const isActive = t.id === active?.id;
+    const li = document.createElement("li");
+    const label = document.createElement("label");
+    if (isActive) label.className = "disabled";
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = isActive || extraTabs.has(t.id);
+    box.disabled = isActive;
+    box.onchange = () => {
+      box.checked ? extraTabs.add(t.id) : extraTabs.delete(t.id);
+      updateTabsBtn();
+    };
+    const title = document.createElement("span");
+    title.className = "t";
+    title.textContent = t.title || t.url;
+    title.title = t.url;
+    label.append(box, title);
+    if (isActive || looksLikePdfUrl(t.url)) {
+      const tag = document.createElement("small");
+      tag.textContent = isActive ? "current" : "PDF, skipped";
+      label.append(tag);
+    }
+    li.appendChild(label);
+    list.appendChild(li);
+  }
+  updateTabsBtn();
+}
+
+$("tabsBtn").onclick = () => {
+  $("tabPicker").hidden = !$("tabPicker").hidden;
+  if (!$("tabPicker").hidden) renderTabList();
+};
+for (const ev of ["onCreated", "onRemoved", "onUpdated", "onActivated"]) {
+  chrome.tabs[ev].addListener(() => !$("tabPicker").hidden && renderTabList());
+}
+
 // ---------- context gathering ----------
 async function runInTab(tab, func, allFrames = false) {
   const res = await chrome.scripting.executeScript({ target: { tabId: tab.id, allFrames }, func });
@@ -229,6 +282,27 @@ async function gatherContext() {
     } catch {
       notes.push("page text unavailable on this page");
     }
+  }
+
+  if (extraTabs.size) {
+    const others = (await Promise.all([...extraTabs].map((id) => chrome.tabs.get(id).catch(() => null))))
+      .filter((t) => t && t.id !== tab.id);
+    for (const id of [...extraTabs]) if (!others.some((t) => t.id === id)) extraTabs.delete(id); // closed
+    updateTabsBtn();
+    const budget = Math.min(MAX_PAGE_CHARS, Math.floor(MAX_EXTRA_TABS_CHARS / Math.max(others.length, 1)));
+    let added = 0;
+    for (const t of others) {
+      if (looksLikePdfUrl(t.url)) { notes.push(`tab "${t.title}" skipped (PDF)`); continue; }
+      try {
+        const [text] = await runInTab(t, readPageText);
+        if (!text) { notes.push(`tab "${t.title}" has no text`); continue; }
+        parts.push({ text: `Other open tab "${t.title}" (${t.url}), page text:\n"""\n${text.slice(0, budget)}\n"""` });
+        added++;
+      } catch {
+        notes.push(`tab "${t.title}" unavailable (restricted or asleep)`);
+      }
+    }
+    if (added) notes.push(`${added} extra tab${added > 1 ? "s" : ""}`);
   }
 
   const caps = capsFor(providerId, cur().model);
