@@ -8,7 +8,7 @@ Sidenote is a browser extension (Chrome, Brave and other Chromium browsers) that
 
 ## Who is responsible
 
-Sidenote is developed by an individual developer based in Romania, European Union. Contact: **[YOUR CONTACT EMAIL]**.
+Sidenote is developed by an individual developer based in Romania, European Union. Contact: **cristiandragan34@yahoo.ro**.
 
 The developer does not operate any server that receives your data and therefore does not collect, receive or store it. The AI provider you choose receives the data you send and is responsible for it under its own terms (see "AI providers" below).
 
@@ -89,4 +89,4 @@ If this policy changes, the new version will be published at the same address wi
 
 ## Contact
 
-Questions about this policy: **[YOUR CONTACT EMAIL]**.
+Questions about this policy: **cristiandragan34@yahoo.ro**.
