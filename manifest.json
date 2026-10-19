@@ -3,6 +3,12 @@
   "name": "Sidenote",
   "version": "0.1.0",
   "description": "Chat with your own AI model (Gemini, Claude, OpenAI…) about the current tab: selection, page, other tabs, screenshot or PDF.",
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
   "permissions": [
     "activeTab",
     "scripting",
@@ -19,7 +25,12 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Open Sidenote"
+    "default_title": "Open Sidenote",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png",
+      "48": "icons/icon-48.png"
+    }
   },
   "commands": {
     "focus-input": {
