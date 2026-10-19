@@ -173,6 +173,7 @@ const PROVIDERS = {
     keyPlaceholder: "AIza...",
     keyUrl: "https://aistudio.google.com/apikey",
     modelsUrl: "https://ai.google.dev/gemini-api/docs/models",
+    privacyUrl: "https://ai.google.dev/gemini-api/terms",
   },
   anthropic: {
     name: "Claude", stream: streamAnthropic, caps: { image: true, pdf: true },
@@ -180,6 +181,7 @@ const PROVIDERS = {
     keyPlaceholder: "sk-ant-...",
     keyUrl: "https://console.anthropic.com/settings/keys",
     modelsUrl: "https://docs.anthropic.com/en/docs/about-claude/models",
+    privacyUrl: "https://www.anthropic.com/legal/privacy",
   },
   openai: {
     name: "OpenAI", stream: streamOpenAICompat, caps: { image: true, pdf: true },
@@ -187,6 +189,7 @@ const PROVIDERS = {
     keyPlaceholder: "sk-...",
     keyUrl: "https://platform.openai.com/api-keys",
     modelsUrl: "https://platform.openai.com/docs/models",
+    privacyUrl: "https://openai.com/policies/privacy-policy",
   },
   deepseek: {
     name: "DeepSeek", stream: streamOpenAICompat,
@@ -196,6 +199,7 @@ const PROVIDERS = {
     keyPlaceholder: "sk-...",
     keyUrl: "https://platform.deepseek.com/api_keys",
     modelsUrl: "https://api-docs.deepseek.com/quick_start/pricing",
+    privacyUrl: "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html",
   },
   grok: {
     name: "Grok", stream: streamOpenAICompat, caps: { image: true, pdf: false },
@@ -203,6 +207,7 @@ const PROVIDERS = {
     keyPlaceholder: "xai-...",
     keyUrl: "https://console.x.ai",
     modelsUrl: "https://docs.x.ai/docs/models",
+    privacyUrl: "https://x.ai/legal/privacy-policy",
   },
   qwen: {
     name: "Qwen", stream: streamOpenAICompat, caps: { image: true, pdf: false },

@@ -24,6 +24,10 @@ Context you can attach per message: selected text, page text, a screenshot of th
 
 OpenAI, Grok, Qwen and DeepSeek use the OpenAI-compatible chat API, and their base URL is editable (e.g. Qwen in mainland China, or any compatible endpoint). When a provider can't read an attachment the extension skips it and says so; use *Page text* instead. Providers are defined in `providers.js`.
 
+## Privacy
+
+Nothing is sent until you press send; then your message, the context you ticked and the earlier messages go straight from your browser to the chosen provider with your own API key. There is no server or analytics of ours. API keys and saved chats (text only) are stored unencrypted in the browser's extension storage; screenshots and PDFs are never saved. What the provider does with the data (retention, training, human review, where it's processed) is governed by its own terms; the settings panel links to them. A short notice about this is shown on first use.
+
 ## Notes
 - Falls back to a popup window if the browser lacks the `sidePanel` API.
 - PDFs are sent inline (limit 15 MB). The built-in PDF viewer's text selection isn't readable, so the whole PDF is sent.

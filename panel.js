@@ -110,11 +110,51 @@ function renderSettings() {
   $("keyHint").textContent = `The key is stored locally in this browser and only sent to ${new URL(c.baseUrl || p.baseUrl).host}.`;
   $("modelInput").placeholder = `exact ${p.name} model ID`;
   renderModels();
+  renderPrivacy();
 }
 
+// ---------- privacy note ----------
+let privacyAck = false;
+
+function renderPrivacy() {
+  const p = PROVIDERS[providerId];
+  const host = new URL(cur().baseUrl || p.baseUrl).host;
+  $("privacyText").textContent = `Nothing leaves your browser until you press send. Then your message and whatever context you ticked go straight to ${p.name} (${host}) with your API key.`;
+  $("privacyNote").hidden = privacyAck;
+
+  const items = [
+    `Sent on each message: your text plus the ticked context (selection, page text, other tabs, screenshot, PDF) and the earlier messages of the chat. There is no server of ours in between; the extension has no analytics.`,
+    `The extension reads the selection on the current tab to auto-tick "Selection", but sends nothing until you send a message. Untick context (or don't use it) on pages with private data such as banking, email or medical pages.`,
+    `Stored in this browser only, unencrypted: your API keys and saved chats (text only). Screenshots and PDFs are never saved. Delete chats in History.`,
+    p.name === "Gemini"
+      ? `Google's free Gemini API tier may use what you send to improve its products and humans may review it; paid usage is excluded. Check Google's current terms.`
+      : `${p.name} handles what you send under its own terms (retention, training use, where data is processed). Check its privacy policy.`,
+  ];
+  const list = $("privacyList");
+  list.textContent = "";
+  for (const t of items) {
+    const li = document.createElement("li");
+    li.textContent = t;
+    list.appendChild(li);
+  }
+  $("privacyLink").replaceChildren(...(p.privacyUrl ? [link(p.privacyUrl, `${p.name} privacy / data terms`)] : []));
+}
+
+$("privacyDetails").onclick = () => {
+  $("settings").hidden = false;
+  $("privacyBox").open = true;
+  $("privacyBox").scrollIntoView?.({ block: "nearest" });
+};
+$("privacyOk").onclick = () => {
+  privacyAck = true;
+  $("privacyNote").hidden = true;
+  chrome.storage.local.set({ privacyAck: true });
+};
+
 async function loadSettings() {
-  const s = await chrome.storage.local.get(["provider", "providerCfg", "apiKey", "models", "model"]);
+  const s = await chrome.storage.local.get(["provider", "providerCfg", "apiKey", "models", "model", "privacyAck"]);
   providerCfg = s.providerCfg || {};
+  privacyAck = !!s.privacyAck;
   // Migrate the old single-provider (Gemini-only) settings.
   if (!s.providerCfg && (s.apiKey || s.models)) {
     providerCfg.gemini = { apiKey: s.apiKey || "", baseUrl: "", models: s.models || [], model: s.model || "" };
