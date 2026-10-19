@@ -2,71 +2,126 @@ const $ = (id) => document.getElementById(id);
 const MAX_PAGE_CHARS = 200000;
 const MAX_PDF_BYTES = 15 * 1024 * 1024; // inline request limit is ~20MB incl. base64 overhead
 
-let history = []; // Gemini "contents" array
+let history = []; // Gemini-style "contents" array (see providers.js)
 let busy = false;
 
 // ---------- settings ----------
-// Models are whatever IDs the user adds; there are no built-in defaults.
-let models = [];
-let selectedModel = "";
+// Per-provider config: { apiKey, baseUrl, models: [ids the user added], model: selected id }.
+// There are no built-in model IDs; the user adds the exact IDs from the provider's docs.
+let providerId = "gemini";
+let providerCfg = {};
 
-async function saveModels() {
-  await chrome.storage.local.set({ models, model: selectedModel });
+const cur = () => (providerCfg[providerId] ||= { apiKey: "", baseUrl: "", models: [], model: "" });
+
+async function saveConfig() {
+  await chrome.storage.local.set({ provider: providerId, providerCfg });
   renderModels();
 }
 
+function renderProviders() {
+  const sel = $("providerSelect");
+  sel.textContent = "";
+  for (const [id, p] of Object.entries(PROVIDERS)) sel.add(new Option(p.name, id));
+  sel.value = providerId;
+}
+
 function renderModels() {
+  const c = cur();
   const sel = $("modelSelect");
   sel.textContent = "";
-  if (!models.length) {
-    sel.add(new Option("(add a model in settings)", ""));
-  }
-  for (const m of models) sel.add(new Option(m, m));
-  sel.value = selectedModel;
+  if (!c.models.length) sel.add(new Option("(add a model in settings)", ""));
+  for (const m of c.models) sel.add(new Option(m, m));
+  sel.value = c.model;
 
   const list = $("modelList");
   list.textContent = "";
-  for (const m of models) {
+  for (const m of c.models) {
     const li = document.createElement("li");
     const span = document.createElement("span");
     span.textContent = m;
     const del = document.createElement("button");
     del.textContent = "Remove";
     del.onclick = () => {
-      models = models.filter((x) => x !== m);
-      if (selectedModel === m) selectedModel = models[0] || "";
-      saveModels();
+      c.models = c.models.filter((x) => x !== m);
+      if (c.model === m) c.model = c.models[0] || "";
+      saveConfig();
     };
     li.append(span, del);
     list.appendChild(li);
   }
 }
 
-async function loadSettings() {
-  const s = await chrome.storage.local.get(["apiKey", "models", "model"]);
-  models = s.models || [];
-  selectedModel = models.includes(s.model) ? s.model : models[0] || "";
-  $("apiKey").value = s.apiKey || "";
+function link(href, text) {
+  const a = document.createElement("a");
+  a.href = href;
+  a.textContent = text;
+  a.target = "_blank";
+  a.rel = "noopener noreferrer";
+  return a;
+}
+
+// Fill the settings form for the active provider.
+function renderSettings() {
+  const p = PROVIDERS[providerId], c = cur();
+  $("keyLabel").textContent = `${p.name} API key`;
+  $("apiKey").placeholder = p.keyPlaceholder;
+  $("apiKey").value = c.apiKey;
+  $("baseUrl").value = c.baseUrl || p.baseUrl;
+  $("baseUrlLabel").hidden = !p.editableUrl;
+  $("providerLinks").replaceChildren(link(p.keyUrl, "Get an API key"), " · ", link(p.modelsUrl, "Model IDs"));
+  $("keyHint").textContent = `The key is stored locally in this browser and only sent to ${new URL(c.baseUrl || p.baseUrl).host}.`;
+  $("modelInput").placeholder = `exact ${p.name} model ID`;
   renderModels();
-  if (!s.apiKey || !models.length) $("settings").hidden = false;
+}
+
+async function loadSettings() {
+  const s = await chrome.storage.local.get(["provider", "providerCfg", "apiKey", "models", "model"]);
+  providerCfg = s.providerCfg || {};
+  // Migrate the old single-provider (Gemini-only) settings.
+  if (!s.providerCfg && (s.apiKey || s.models)) {
+    providerCfg.gemini = { apiKey: s.apiKey || "", baseUrl: "", models: s.models || [], model: s.model || "" };
+    await chrome.storage.local.remove(["apiKey", "models", "model"]);
+  }
+  providerId = PROVIDERS[s.provider] ? s.provider : "gemini";
+  const c = cur();
+  if (!c.models.includes(c.model)) c.model = c.models[0] || "";
+  await saveConfig();
+  renderProviders();
+  renderSettings();
+  if (!c.apiKey || !c.models.length) $("settings").hidden = false;
 }
 
 $("settingsBtn").onclick = () => ($("settings").hidden = !$("settings").hidden);
+$("providerSelect").onchange = () => {
+  providerId = $("providerSelect").value;
+  const c = cur();
+  if (!c.models.includes(c.model)) c.model = c.models[0] || "";
+  saveConfig();
+  renderSettings();
+  if (!c.apiKey || !c.models.length) $("settings").hidden = false;
+};
 $("saveSettings").onclick = async () => {
-  await chrome.storage.local.set({ apiKey: $("apiKey").value.trim() });
+  const c = cur(), p = PROVIDERS[providerId];
+  c.apiKey = $("apiKey").value.trim();
+  const url = $("baseUrl").value.trim().replace(/\/+$/, "");
+  c.baseUrl = p.editableUrl && url && url !== p.baseUrl ? url : "";
+  try { new URL(c.baseUrl || p.baseUrl); } catch { c.baseUrl = ""; }
+  await saveConfig();
+  renderSettings();
 };
 $("addModel").onclick = () => {
+  const c = cur();
   const id = $("modelInput").value.trim().replace(/^models\//, "");
   if (!id) return;
-  if (!models.includes(id)) models.push(id);
-  selectedModel = id;
+  if (!c.models.includes(id)) c.models.push(id);
+  c.model = id;
   $("modelInput").value = "";
-  saveModels();
+  saveConfig();
 };
 $("modelInput").addEventListener("keydown", (e) => e.key === "Enter" && $("addModel").click());
 $("modelSelect").onchange = () => {
-  selectedModel = $("modelSelect").value;
-  saveModels();
+  cur().model = $("modelSelect").value;
+  saveConfig();
 };
 
 // ---------- tab helpers ----------
@@ -176,7 +231,10 @@ async function gatherContext() {
     }
   }
 
-  if ($("useShot").checked) {
+  const caps = capsFor(providerId, cur().model);
+  if ($("useShot").checked && !caps.image) {
+    notes.push(`screenshot skipped (${PROVIDERS[providerId].name} can't read images with this model)`);
+  } else if ($("useShot").checked) {
     try {
       const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg", quality: 80 });
       parts.push({ text: "The following image is a screenshot of the user's currently visible browser tab. You can see it; use it to answer." });
@@ -191,7 +249,9 @@ async function gatherContext() {
   }
 
   if ($("usePdf").checked) {
-    if (!/^(https?|file):/.test(tab.url || "")) {
+    if (!caps.pdf) {
+      notes.push(`PDF skipped (${PROVIDERS[providerId].name} can't read PDFs; try Page text)`);
+    } else if (!/^(https?|file):/.test(tab.url || "")) {
       notes.push("PDF skipped (tab is not a web/file URL)");
     } else {
       try {
@@ -381,7 +441,7 @@ $("newChat").onclick = () => {
   if (!busy) startNewChat();
 };
 
-// ---------- Gemini call ----------
+// ---------- model call ----------
 const INSTRUCTION_FILES = ["01-environment.md", "02-capabilities.md", "03-style.md"];
 let systemPromise;
 function loadSystemInstruction() {
@@ -391,64 +451,16 @@ function loadSystemInstruction() {
   return systemPromise;
 }
 
-async function streamGemini(apiKey, model, contents, onText, onRetry) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:streamGenerateContent?alt=sse`;
-  const system = await loadSystemInstruction();
-  let resp;
-  for (let attempt = 0; ; attempt++) {
-    resp = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "x-goog-api-key": apiKey },
-      body: JSON.stringify({ contents, systemInstruction: { parts: [{ text: system }] } }),
-    });
-    if (resp.ok) break;
-    let msg = "HTTP " + resp.status;
-    try { msg = (await resp.json()).error?.message || msg; } catch {}
-    const transient = [429, 500, 503, 504].includes(resp.status);
-    if (!transient || attempt >= 4) throw new Error(msg);
-    const wait = 2 * 2 ** attempt;
-    for (let s = wait; s > 0; s--) {
-      onRetry?.(`Model is busy, retrying in ${s}s (${attempt + 1}/4)…`);
-      await new Promise((r) => setTimeout(r, 1000));
-    }
-  }
-  const reader = resp.body.getReader();
-  const dec = new TextDecoder();
-  let buf = "";
-  let full = "";
-  for (;;) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    buf += dec.decode(value, { stream: true });
-    const lines = buf.split("\n");
-    buf = lines.pop();
-    for (const line of lines) {
-      if (!line.startsWith("data:")) continue;
-      const json = line.slice(5).trim();
-      if (!json) continue;
-      const chunk = JSON.parse(json);
-      const text = (chunk.candidates?.[0]?.content?.parts || []).map((p) => p.text || "").join("");
-      if (text) {
-        full += text;
-        onText(full);
-      }
-      if (chunk.promptFeedback?.blockReason) throw new Error("Blocked: " + chunk.promptFeedback.blockReason);
-    }
-  }
-  if (!full) throw new Error("Empty response from Gemini.");
-  return full;
-}
-
 async function send() {
   if (busy) return;
   const question = $("input").value.trim();
   if (!question) return;
-  const { apiKey } = await chrome.storage.local.get("apiKey");
-  const model = selectedModel;
+  const { apiKey, baseUrl, model } = cur();
   if (!apiKey || !model) {
     $("settings").hidden = false;
-    return addMsg("error", "Add your API key and at least one model ID in settings first.");
+    return addMsg("error", `Add your ${PROVIDERS[providerId].name} API key and at least one model ID in settings first.`);
   }
+  const label = `${PROVIDERS[providerId].name} · ${model}`;
 
   if (sent[sent.length - 1] !== question) sent.push(question);
   recall = -1;
@@ -461,13 +473,13 @@ async function send() {
     const userMeta = notes.length ? "Attached: " + notes.join(", ") : "No context attached";
     addMsg("user", question, userMeta);
     const turn = { role: "user", parts: [...parts, { text: question }] };
-    const body = addMsg("model", "…", model);
-    const reply = await streamGemini(apiKey, model, [...history, turn], (t) => {
+    const body = addMsg("model", "…", label);
+    const reply = await streamChat(providerId, { apiKey, baseUrl }, model, [...history, turn], await loadSystemInstruction(), (t) => {
       setBody(body, t);
       $("log").scrollTop = $("log").scrollHeight;
     }, (msg) => (body.textContent = msg));
     history.push(turn, { role: "model", parts: [{ text: reply }] });
-    saveTurn(question, notes, userMeta, reply, model);
+    saveTurn(question, notes, userMeta, reply, label);
   } catch (e) {
     addMsg("error", "Error: " + e.message);
   } finally {

@@ -79,6 +79,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 .tabline > span, .tabline #tabInfo { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; min-width: 0; }
 .tabline button { padding: 2px 7px; border-radius: 6px; color: var(--muted); }
 .tabline button:hover { background: var(--surface); color: var(--text); }
+#providerSelect { flex: 0 0 34% !important; }
 .modelline select { flex: 1; min-width: 0; max-width: none; padding: 4px 8px; font-size: 12.5px; background: var(--surface); border-color: transparent; }
 
 .toggles { display: flex; flex-wrap: wrap; gap: 6px; }

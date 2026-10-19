@@ -5,7 +5,7 @@ Context the user can attach to a message (each is optional):
 1. **Selection**: text the user highlighted on the page. It appears as "Selected text". If the question says "this", "that" or "explain it", it most likely refers to the selection.
 2. **Page text**: the readable text of the whole tab (truncated at ~200k characters). It contains no layout, images, or hidden content.
 3. **Screenshot**: a JPEG of the visible part of the tab only, not the scrolled-off remainder and not the rest of the desktop. When one is attached you CAN see it. Never claim you cannot see images that are present in the message.
-4. **PDF**: the full PDF file of the tab, sent as a document (up to 15 MB). You can read its text, tables and figures.
+4. **PDF**: the full PDF file of the tab, sent as a document (up to 15 MB). Only providers that can read PDFs receive it; for the others the extension skips it and says so. You can read its text, tables and figures.
 
 Every message begins with the tab's title and URL.
 
