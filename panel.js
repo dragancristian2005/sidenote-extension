@@ -111,6 +111,7 @@ function renderSettings() {
   $("modelInput").placeholder = `exact ${p.name} model ID`;
   renderModels();
   renderPrivacy();
+  renderAllSites();
 }
 
 // ---------- privacy note ----------
@@ -186,6 +187,9 @@ $("saveSettings").onclick = async () => {
   try { new URL(c.baseUrl || p.baseUrl); } catch { c.baseUrl = ""; }
   await saveConfig();
   renderSettings();
+  if (c.apiKey && !(await ensureOrigins([c.baseUrl || p.baseUrl]))) {
+    $("keyHint").textContent = `Access to ${new URL(c.baseUrl || p.baseUrl).host} was not granted; you will be asked again when you send a message.`;
+  }
 };
 $("addModel").onclick = () => {
   const c = cur();
@@ -201,6 +205,66 @@ $("modelSelect").onchange = () => {
   cur().model = $("modelSelect").value;
   saveConfig();
 };
+
+// ---------- site access ----------
+// No host permissions are granted at install. The API host of the chosen provider and the sites
+// of tabs we read are requested at runtime (optional_host_permissions) and then remembered.
+function toPattern(url) {
+  try {
+    const u = new URL(url);
+    if (u.protocol === "file:") return "file:///*";
+    return /^https?:$/.test(u.protocol) ? `${u.protocol}//${u.hostname}/*` : null;
+  } catch {
+    return null;
+  }
+}
+
+// Resolves true if access to all the URLs' sites is (or becomes) granted. Call from a user gesture.
+async function ensureOrigins(urls) {
+  const origins = [...new Set(urls.map(toPattern).filter(Boolean))];
+  if (!origins.length) return true;
+  try {
+    return (await chrome.permissions.contains({ origins })) || (await chrome.permissions.request({ origins }));
+  } catch {
+    return false;
+  }
+}
+
+// Optional "stop asking per site": one broad grant for all http(s) sites, revocable here or in brave://extensions.
+const ALL_SITES = ["https://*/*", "http://*/*"];
+
+async function renderAllSites() {
+  try { $("allSites").checked = await chrome.permissions.contains({ origins: ALL_SITES }); } catch {}
+}
+$("allSites").onchange = async () => {
+  const box = $("allSites");
+  try {
+    if (box.checked) box.checked = await chrome.permissions.request({ origins: ALL_SITES });
+    else await chrome.permissions.remove({ origins: ALL_SITES });
+  } catch {
+    box.checked = !box.checked;
+  }
+};
+chrome.permissions.onAdded?.addListener(renderAllSites);
+chrome.permissions.onRemoved?.addListener(renderAllSites);
+
+// Everything one message needs: the provider's API host, the current tab if any page-reading
+// toggle is on, and the ticked extra tabs. One combined prompt, since a gesture allows only one.
+async function ensureAccess() {
+  const apiUrl = cur().baseUrl || PROVIDERS[providerId].baseUrl;
+  const urls = [apiUrl];
+  if (["useSelection", "usePage", "useShot", "usePdf"].some((id) => $(id).checked)) {
+    const tab = await getTargetTab();
+    if (tab?.url) urls.push(tab.url);
+  }
+  for (const id of extraTabs) {
+    const t = await chrome.tabs.get(id).catch(() => null);
+    if (t?.url) urls.push(t.url);
+  }
+  if (await ensureOrigins(urls)) return { ok: true };
+  const hosts = [...new Set(urls.map((u) => { try { return new URL(u).host || "local files"; } catch { return null; } }).filter(Boolean))];
+  return { ok: false, hosts };
+}
 
 // ---------- tab helpers ----------
 async function getTargetTab() {
@@ -269,7 +333,11 @@ async function renderTabList() {
     box.type = "checkbox";
     box.checked = isActive || extraTabs.has(t.id);
     box.disabled = isActive;
-    box.onchange = () => {
+    box.onchange = async () => {
+      if (box.checked && !(await ensureOrigins([t.url]))) {
+        box.checked = false; // site access denied
+        return;
+      }
       box.checked ? extraTabs.add(t.id) : extraTabs.delete(t.id);
       updateTabsBtn();
     };
@@ -394,7 +462,7 @@ async function gatherContext() {
     } catch (e) {
       const blocked = /activeTab|cannot access|permission/i.test(e.message);
       notes.push(blocked
-        ? "screenshot blocked (brave:// pages, the New Tab page and the Web Store can't be captured; on a normal site, set the extension's Site access to 'On all sites' in brave://extensions)"
+        ? "screenshot blocked (brave:// pages, the New Tab page and the Web Store can't be captured; on a normal site, allow site access when asked)"
         : "screenshot failed: " + e.message);
     }
   }
@@ -535,6 +603,9 @@ async function summarizeAndContinue() {
   if (busy || !history.length) return;
   const { apiKey, baseUrl, model } = cur();
   if (!apiKey || !model) return ($("settings").hidden = false);
+  if (!(await ensureOrigins([baseUrl || PROVIDERS[providerId].baseUrl]))) {
+    return addMsg("error", "Allow access to the provider's API host to summarize.");
+  }
   busy = true;
   $("send").disabled = true;
   $("summarize").disabled = true;
@@ -675,10 +746,17 @@ async function send() {
   }
   const label = `${PROVIDERS[providerId].name} · ${model}`;
 
-  if (sent[sent.length - 1] !== question) sent.push(question);
-  recall = -1;
   busy = true;
   $("send").disabled = true;
+  const access = await ensureAccess();
+  if (!access.ok) {
+    busy = false;
+    $("send").disabled = false;
+    return addMsg("error", `Site access is needed to send this: ${access.hosts.join(", ")}. Allow it when asked, or untick the context that needs it.`);
+  }
+
+  if (sent[sent.length - 1] !== question) sent.push(question);
+  recall = -1;
   $("input").value = "";
   $("input").style.height = "auto";
   try {

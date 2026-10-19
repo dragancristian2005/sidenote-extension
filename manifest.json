@@ -3,15 +3,34 @@
   "name": "Gemini Sidekick",
   "version": "0.1.0",
   "description": "Chat with Gemini about your selection, the page, a screenshot, or the PDF in the current tab.",
-  "permissions": ["activeTab", "scripting", "storage", "tabs", "sidePanel"],
-  "host_permissions": ["<all_urls>"],
-  "background": { "service_worker": "background.js" },
-  "action": { "default_title": "Open Gemini Sidekick" },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage",
+    "tabs",
+    "sidePanel"
+  ],
+  "optional_host_permissions": [
+    "https://*/*",
+    "http://*/*",
+    "file:///*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_title": "Open Gemini Sidekick"
+  },
   "commands": {
     "focus-input": {
-      "suggested_key": { "default": "Alt+G", "mac": "Alt+G" },
+      "suggested_key": {
+        "default": "Alt+G",
+        "mac": "Alt+G"
+      },
       "description": "Focus the Gemini Sidekick message box"
     }
   },
-  "side_panel": { "default_path": "panel.html" }
+  "side_panel": {
+    "default_path": "panel.html"
+  }
 }

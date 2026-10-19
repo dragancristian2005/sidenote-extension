@@ -115,6 +115,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--accent); }
 #privacyNote span { flex: 1; min-width: 0; }
 #privacyNote button { padding: 3px 9px; border-radius: 999px; font-size: 12px; white-space: nowrap; color: var(--accent); }
 #privacyNote button:hover { background: var(--accent-soft); }
+#settings label.check { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; color: var(--text); }
 #privacyBox { margin-top: 12px; font-size: 12px; color: var(--muted); }
 #privacyBox summary { cursor: pointer; }
 #privacyList { margin: 6px 0 0; padding-left: 18px; }
