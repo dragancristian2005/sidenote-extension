@@ -28,6 +28,7 @@ OpenAI, Grok, Qwen and DeepSeek use the OpenAI-compatible chat API, and their ba
 - Falls back to a popup window if the browser lacks the `sidePanel` API.
 - PDFs are sent inline (limit 15 MB). The built-in PDF viewer's text selection isn't readable, so the whole PDF is sent.
 - Models are only the IDs you add yourself; remove them in settings.
+- To save tokens, page text / screenshots / PDFs from messages older than the last 2 exchanges are replaced with a placeholder when the history is re-sent (stored chats keep text only). When a chat reaches an estimated ~60k tokens a banner offers *Summarize & continue*, which asks the current model for a summary (prompt in `instructions/summarize.md`) and starts a new chat from it; the old chat stays in History. Thresholds are `KEEP_ATTACHED_TURNS` and `LONG_CHAT_TOKENS` in `panel.js`.
 - Switching provider mid-chat keeps the text history; images/PDFs the new provider can't read are replaced with a placeholder.
 
 ## Built-in instructions

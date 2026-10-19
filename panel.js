@@ -3,8 +3,45 @@ const MAX_PAGE_CHARS = 200000;
 const MAX_EXTRA_TABS_CHARS = 400000; // total budget for other tabs, split evenly
 const MAX_PDF_BYTES = 15 * 1024 * 1024; // inline request limit is ~20MB incl. base64 overhead
 
+const KEEP_ATTACHED_TURNS = 2; // earlier exchanges that keep their page text / screenshots / PDFs
+const LONG_CHAT_TOKENS = 60000; // rough estimate that triggers the "long chat" banner
+
 let history = []; // Gemini-style "contents" array (see providers.js)
 let busy = false;
+
+// Attachment parts are tagged with what they are so old ones can be swapped for a placeholder.
+const attachmentKind = new WeakMap();
+const tag = (part, kind) => (attachmentKind.set(part, kind), part);
+
+// Copy of the history for sending: attachments older than the last KEEP_ATTACHED_TURNS
+// exchanges become short placeholders (the stored history keeps everything).
+function trimHistory(h) {
+  const cutoff = h.length - 2 * KEEP_ATTACHED_TURNS;
+  return h.map((turn, i) => {
+    if (i >= cutoff || turn.role !== "user") return turn;
+    const parts = [];
+    for (const p of turn.parts) {
+      const kind = attachmentKind.get(p);
+      if (!kind) { parts.push(p); continue; }
+      const text = `[${kind} from an earlier message omitted]`;
+      if (parts[parts.length - 1]?.text !== text) parts.push({ text });
+    }
+    return { ...turn, parts };
+  });
+}
+
+// Very rough token estimate: ~4 characters per token, flat cost for images, bytes/100 for PDFs.
+function estimateTokens(contents) {
+  let n = 0;
+  for (const t of contents) {
+    for (const p of t.parts) {
+      if (p.text !== undefined) n += p.text.length / 4;
+      else if (p.inlineData.mimeType === "application/pdf") n += (p.inlineData.data.length * 0.75) / 100;
+      else n += 1500;
+    }
+  }
+  return Math.round(n);
+}
 
 // ---------- settings ----------
 // Per-provider config: { apiKey, baseUrl, models: [ids the user added], model: selected id }.
@@ -262,7 +299,7 @@ async function gatherContext() {
     try {
       const sels = (await runInTab(tab, readSelection, true)).filter(Boolean);
       if (sels.length) {
-        parts.push({ text: `Selected text:\n"""\n${sels.join("\n---\n")}\n"""` });
+        parts.push(tag({ text: `Selected text:\n"""\n${sels.join("\n---\n")}\n"""` }, "selected text"));
         notes.push("selection");
       } else {
         notes.push("no selection found");
@@ -276,7 +313,7 @@ async function gatherContext() {
     try {
       const [text] = await runInTab(tab, readPageText);
       if (text) {
-        parts.push({ text: `Page text:\n"""\n${text.slice(0, MAX_PAGE_CHARS)}\n"""` });
+        parts.push(tag({ text: `Page text:\n"""\n${text.slice(0, MAX_PAGE_CHARS)}\n"""` }, "page text"));
         notes.push("page text");
       }
     } catch {
@@ -296,7 +333,7 @@ async function gatherContext() {
       try {
         const [text] = await runInTab(t, readPageText);
         if (!text) { notes.push(`tab "${t.title}" has no text`); continue; }
-        parts.push({ text: `Other open tab "${t.title}" (${t.url}), page text:\n"""\n${text.slice(0, budget)}\n"""` });
+        parts.push(tag({ text: `Other open tab "${t.title}" (${t.url}), page text:\n"""\n${text.slice(0, budget)}\n"""` }, "other tab text"));
         added++;
       } catch {
         notes.push(`tab "${t.title}" unavailable (restricted or asleep)`);
@@ -311,8 +348,8 @@ async function gatherContext() {
   } else if ($("useShot").checked) {
     try {
       const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: "jpeg", quality: 80 });
-      parts.push({ text: "The following image is a screenshot of the user's currently visible browser tab. You can see it; use it to answer." });
-      parts.push({ inlineData: { mimeType: "image/jpeg", data: dataUrl.split(",")[1] } });
+      parts.push(tag({ text: "The following image is a screenshot of the user's currently visible browser tab. You can see it; use it to answer." }, "screenshot"));
+      parts.push(tag({ inlineData: { mimeType: "image/jpeg", data: dataUrl.split(",")[1] } }, "screenshot"));
       notes.push("screenshot");
     } catch (e) {
       const blocked = /activeTab|cannot access|permission/i.test(e.message);
@@ -338,7 +375,7 @@ async function gatherContext() {
         } else if (buf.byteLength > MAX_PDF_BYTES) {
           notes.push(`PDF too large (${(buf.byteLength / 1048576).toFixed(1)} MB, limit 15 MB)`);
         } else {
-          parts.push({ inlineData: { mimeType: "application/pdf", data: toBase64(buf) } });
+          parts.push(tag({ inlineData: { mimeType: "application/pdf", data: toBase64(buf) } }, "PDF"));
           notes.push("PDF");
         }
       } catch (e) {
@@ -438,9 +475,69 @@ function persistChats() {
   return chrome.storage.local.set({ chats, lastChat: current?.id || null });
 }
 
+// ---------- long-chat banner + "Summarize and continue" ----------
+let bannerDismissed = false;
+
+function updateBanner() {
+  const tokens = estimateTokens(trimHistory(history));
+  const show = !bannerDismissed && tokens >= LONG_CHAT_TOKENS;
+  $("longBanner").hidden = !show;
+  if (show) $("longText").textContent = `This chat is getting long (~${Math.round(tokens / 1000)}k tokens per message). Long chats cost more and the model uses the early parts less well.`;
+}
+
+let summaryPromise;
+function loadSummaryPrompt() {
+  summaryPromise ||= fetch(chrome.runtime.getURL("instructions/summarize.md")).then((r) => r.text()).catch(() => "");
+  return summaryPromise;
+}
+
+async function summarizeAndContinue() {
+  if (busy || !history.length) return;
+  const { apiKey, baseUrl, model } = cur();
+  if (!apiKey || !model) return ($("settings").hidden = false);
+  busy = true;
+  $("send").disabled = true;
+  $("summarize").disabled = true;
+  $("longText").textContent = "Summarizing…";
+  try {
+    const prompt = (await loadSummaryPrompt()) || "Summarize our conversation so far: decisions made, key facts, open questions.";
+    const summary = await streamChat(providerId, { apiKey, baseUrl }, model,
+      [...trimHistory(history), { role: "user", parts: [{ text: prompt }] }], await loadSystemInstruction(), () => {},
+      (msg) => ($("longText").textContent = msg));
+    const label = `Summary of previous chat · ${PROVIDERS[providerId].name} · ${model}`;
+    const title = "Summary: " + (current?.title || "chat");
+    current = {
+      id: Date.now().toString(36), title, updated: Date.now(),
+      msgs: [{ cls: "model", text: summary, meta: label }],
+      history: [
+        { role: "user", parts: [{ text: "Summary of our previous conversation (use it as context):\n\n" + summary }] },
+        { role: "model", parts: [{ text: "Understood. I'll continue from that summary." }] },
+      ],
+    };
+    chats.unshift(current);
+    history = [...current.history];
+    bannerDismissed = false;
+    $("log").textContent = "";
+    addMsg("model", summary, label);
+    renderChatList();
+    persistChats();
+  } catch (e) {
+    addMsg("error", "Summary failed: " + e.message);
+  } finally {
+    busy = false;
+    $("send").disabled = false;
+    $("summarize").disabled = false;
+    updateBanner();
+  }
+}
+$("summarize").onclick = summarizeAndContinue;
+$("dismissBanner").onclick = () => { bannerDismissed = true; updateBanner(); };
+
 function startNewChat() {
   current = null;
   history = [];
+  bannerDismissed = false;
+  updateBanner();
   $("log").textContent = "";
   renderChatList();
   persistChats();
@@ -451,6 +548,8 @@ function openChat(id) {
   if (!c || busy) return;
   current = c;
   history = [...c.history];
+  bannerDismissed = false;
+  updateBanner();
   $("log").textContent = "";
   for (const m of c.msgs) addMsg(m.cls, m.text, m.meta);
   $("history").hidden = true;
@@ -548,12 +647,13 @@ async function send() {
     addMsg("user", question, userMeta);
     const turn = { role: "user", parts: [...parts, { text: question }] };
     const body = addMsg("model", "…", label);
-    const reply = await streamChat(providerId, { apiKey, baseUrl }, model, [...history, turn], await loadSystemInstruction(), (t) => {
+    const reply = await streamChat(providerId, { apiKey, baseUrl }, model, [...trimHistory(history), turn], await loadSystemInstruction(), (t) => {
       setBody(body, t);
       $("log").scrollTop = $("log").scrollHeight;
     }, (msg) => (body.textContent = msg));
     history.push(turn, { role: "model", parts: [{ text: reply }] });
     saveTurn(question, notes, userMeta, reply, label);
+    updateBanner();
   } catch (e) {
     addMsg("error", "Error: " + e.message);
   } finally {

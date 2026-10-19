@@ -9,6 +9,8 @@ Context the user can attach to a message (each is optional):
 
 5. **Other tabs**: the page text of additional tabs the user ticked, each labelled "Other open tab" with its title and URL. Use the title/URL to say which tab a fact came from.
 
+Attachments from earlier messages (older than the last couple of exchanges) are replaced by a placeholder like "[page text from an earlier message omitted]". If you need that content again, ask the user to re-attach it.
+
 Every message begins with the tab's title and URL.
 
 You can NOT:
