@@ -5,7 +5,7 @@ Brave/Chrome (Manifest V3) extension: a side panel to chat with an AI model abou
 Context you can attach per message: selected text, page text, a screenshot of the visible tab, or the PDF open in the tab.
 
 ## Install
-1. Get an API key from the provider you want (the settings panel links to each provider's key page). A chat subscription (Google AI Pro, ChatGPT Plus, Claude Pro…) does not include API access; the API is billed separately or has its own free tier.
+1. Get an API key from the provider you want (the settings panel links to each provider's key page). A chat subscription (Google AI Pro, ChatGPT Plus, Claude Pro…) does not include API access; the API is billed separately or has its own free tier. **Gemini in the EEA, Switzerland or the UK:** Google's API terms only allow Paid Services there, so use a key from a billing-enabled Google Cloud project rather than a free-tier key.
 2. Open `brave://extensions`, enable **Developer mode**, click **Load unpacked**, pick this folder.
 3. For local PDFs (`file://`), open the extension's details and enable **Allow access to file URLs**.
 4. Click the toolbar icon, open ⚙, pick a provider, paste the key and save it.

@@ -174,6 +174,7 @@ const PROVIDERS = {
     keyUrl: "https://aistudio.google.com/apikey",
     modelsUrl: "https://ai.google.dev/gemini-api/docs/models",
     privacyUrl: "https://ai.google.dev/gemini-api/terms",
+    keyNote: "In the EEA, Switzerland and the UK, Google only allows keys from a billing-enabled Cloud project (Paid Services), not free-tier keys.",
   },
   anthropic: {
     name: "Claude", stream: streamAnthropic, caps: { image: true, pdf: true },

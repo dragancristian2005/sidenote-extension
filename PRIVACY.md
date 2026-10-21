@@ -1,6 +1,6 @@
 # Sidenote Privacy Policy
 
-_Last updated: 19 October 2026_
+_Last updated: 21 October 2026_
 
 Sidenote is a browser extension (Chrome, Brave and other Chromium browsers) that adds a side panel where you chat with an AI model about the page you are viewing. This policy explains what data the extension handles, where it goes, and what it does not do.
 
@@ -64,7 +64,7 @@ The use of information received from Chrome APIs adheres to the [Chrome Web Stor
 
 Once data reaches your chosen provider, its own terms and privacy policy apply, including how long it keeps the data, whether it uses it to train models, whether people may review it, and in which countries it is processed. These differ by provider and by plan (for example, free and paid API tiers can be treated differently). Please read the policy of the provider you use before attaching sensitive content:
 
-- Google Gemini API: https://ai.google.dev/gemini-api/terms
+- Google Gemini API: https://ai.google.dev/gemini-api/terms (note: for users in the EEA, Switzerland and the UK, Google's terms allow only Paid Services, i.e. a key from a billing-enabled Cloud project)
 - Anthropic: https://www.anthropic.com/legal/privacy
 - OpenAI: https://openai.com/policies/privacy-policy
 - xAI (Grok): https://x.ai/legal/privacy-policy

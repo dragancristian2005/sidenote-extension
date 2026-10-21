@@ -60,6 +60,7 @@ PRIVACY BY DESIGN
 GOOD TO KNOW
 • You need an API key from at least one provider. A chat subscription (ChatGPT Plus, Claude Pro, Google AI Pro…) does not include API access. API usage is billed by the provider, and some offer a free tier.
 • What happens to your data after it reaches the provider is governed by that provider's terms, including whether free-tier data may be used for training or review. Avoid attaching sensitive pages.
+• Gemini users in the EEA, Switzerland or the UK: Google's API terms only allow Paid Services there, so use a key from a billing-enabled Google Cloud project, not a free-tier key.
 • The title and URL of the current tab are sent with every message so the model knows what you are asking about.
 • Browser-internal pages (brave://, chrome://) and the Web Store cannot be read.
 
@@ -144,5 +145,5 @@ All data goes directly from the browser to the chosen provider; the developer op
 2. **Pay the one-time $5 developer registration fee** and verify your account.
 3. **Zip the folder contents** (include `icons/`; exclude `.git` and `store/`): `manifest.json` must be at the zip root.
 4. **Test in Brave and Chrome** with real keys: permission prompts, screenshots under per-site grants, and each provider.
-5. **Check the live Gemini API terms** (free tier and EEA clients) and your **employment contract's IP / outside-work clauses**.
+5. **Gemini API terms checked 21 Oct 2026** (EEA note added to the UI, listing, README and policy). Still check your **employment contract's IP / outside-work clauses**.
 6. **Enable Issues** on the GitHub repo if you use it as the support URL.

@@ -107,7 +107,7 @@ function renderSettings() {
   $("baseUrl").value = c.baseUrl || p.baseUrl;
   $("baseUrlLabel").hidden = !p.editableUrl;
   $("providerLinks").replaceChildren(link(p.keyUrl, "Get an API key"), " · ", link(p.modelsUrl, "Model IDs"));
-  $("keyHint").textContent = `The key is stored locally in this browser and only sent to ${new URL(c.baseUrl || p.baseUrl).host}.`;
+  $("keyHint").textContent = `The key is stored locally in this browser and only sent to ${new URL(c.baseUrl || p.baseUrl).host}.` + (p.keyNote ? ` ${p.keyNote}` : "");
   $("modelInput").placeholder = `exact ${p.name} model ID`;
   renderModels();
   renderPrivacy();
@@ -128,7 +128,7 @@ function renderPrivacy() {
     `The extension reads the selection on the current tab to auto-tick "Selection", but sends nothing until you send a message. Untick context (or don't use it) on pages with private data such as banking, email or medical pages.`,
     `Stored in this browser only, unencrypted: your API keys and saved chats (text only). Screenshots and PDFs are never saved. Delete chats in History.`,
     p.name === "Gemini"
-      ? `Google's free Gemini API tier may use what you send to improve its products and humans may review it; paid usage is excluded. Check Google's current terms.`
+      ? `Google's free Gemini API tier may use what you send to improve its products and humans may review it; paid usage is excluded. In the EEA, Switzerland and the UK, Google requires Paid Services (a billing-enabled Cloud project). Check Google's current terms.`
       : `${p.name} handles what you send under its own terms (retention, training use, where data is processed). Check its privacy policy.`,
   ];
   const list = $("privacyList");
