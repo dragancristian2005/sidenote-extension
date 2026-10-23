@@ -183,6 +183,7 @@ const PROVIDERS = {
     keyUrl: "https://console.anthropic.com/settings/keys",
     modelsUrl: "https://docs.anthropic.com/en/docs/about-claude/models",
     privacyUrl: "https://www.anthropic.com/legal/privacy",
+    keyNote: "Use an API key from the Anthropic Console. claude.ai logins and subscription tokens are not supported.",
   },
   openai: {
     name: "OpenAI", stream: streamOpenAICompat, caps: { image: true, pdf: true },
@@ -201,6 +202,8 @@ const PROVIDERS = {
     keyUrl: "https://platform.deepseek.com/api_keys",
     modelsUrl: "https://api-docs.deepseek.com/quick_start/pricing",
     privacyUrl: "https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html",
+    keyNote: "DeepSeek's terms say not to expose your API key in browser or client-side code, and this extension runs in your browser. Use a spend-capped key and accept that risk.",
+    dataNote: "DeepSeek stores data in mainland China, may use your inputs for training (with an opt-out), and its terms are governed by PRC law. Avoid sensitive or personal pages.",
   },
   grok: {
     name: "Grok", stream: streamOpenAICompat, caps: { image: true, pdf: false },
@@ -217,6 +220,7 @@ const PROVIDERS = {
     keyPlaceholder: "sk-...",
     keyUrl: "https://bailian.console.alibabacloud.com/?apiKey=1",
     modelsUrl: "https://www.alibabacloud.com/help/en/model-studio/models",
+    dataNote: "Alibaba Cloud processes data in the region of your endpoint, by default Singapore (outside the EU). Avoid sensitive or personal pages.",
   },
 };
 

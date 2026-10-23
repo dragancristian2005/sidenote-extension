@@ -1,6 +1,6 @@
 # Sidenote Privacy Policy
 
-_Last updated: 21 October 2026_
+_Last updated: 23 October 2026_
 
 Sidenote is a browser extension (Chrome, Brave and other Chromium browsers) that adds a side panel where you chat with an AI model about the page you are viewing. This policy explains what data the extension handles, where it goes, and what it does not do.
 
@@ -65,11 +65,11 @@ The use of information received from Chrome APIs adheres to the [Chrome Web Stor
 Once data reaches your chosen provider, its own terms and privacy policy apply, including how long it keeps the data, whether it uses it to train models, whether people may review it, and in which countries it is processed. These differ by provider and by plan (for example, free and paid API tiers can be treated differently). Please read the policy of the provider you use before attaching sensitive content:
 
 - Google Gemini API: https://ai.google.dev/gemini-api/terms (note: for users in the EEA, Switzerland and the UK, Google's terms allow only Paid Services, i.e. a key from a billing-enabled Cloud project)
-- Anthropic: https://www.anthropic.com/legal/privacy
+- Anthropic: https://www.anthropic.com/legal/privacy (note: Sidenote only works with API keys from the Anthropic Console, not claude.ai logins)
 - OpenAI: https://openai.com/policies/privacy-policy
 - xAI (Grok): https://x.ai/legal/privacy-policy
-- DeepSeek: https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html
-- Alibaba Cloud (Qwen): see the Alibaba Cloud Model Studio terms for the region you use.
+- DeepSeek: https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html (note: DeepSeek states it stores data in mainland China and may use inputs for training, with an opt-out, and its API terms say not to expose your key in browser or client-side code, which a browser extension does; use a spend-capped key)
+- Alibaba Cloud (Qwen): see the Alibaba Cloud Model Studio terms for the region you use (the default international endpoint is in Singapore, outside the EU).
 
 Do not attach pages that contain private information (for example banking, email, medical or confidential work pages) unless you are comfortable with that information being processed by your chosen provider.
 

@@ -129,7 +129,7 @@ function renderPrivacy() {
     `Stored in this browser only, unencrypted: your API keys and saved chats (text only). Screenshots and PDFs are never saved. Delete chats in History.`,
     p.name === "Gemini"
       ? `Google's free Gemini API tier may use what you send to improve its products and humans may review it; paid usage is excluded. In the EEA, Switzerland and the UK, Google requires Paid Services (a billing-enabled Cloud project). Check Google's current terms.`
-      : `${p.name} handles what you send under its own terms (retention, training use, where data is processed). Check its privacy policy.`,
+      : `${p.name} handles what you send under its own terms (retention, training use, where data is processed). Check its privacy policy.` + (p.dataNote ? ` ${p.dataNote}` : ""),
   ];
   const list = $("privacyList");
   list.textContent = "";
