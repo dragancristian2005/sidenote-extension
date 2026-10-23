@@ -13,9 +13,9 @@ Optional, better for search (edit `name` in the manifest before upload):
 `Sidenote: AI Chat Side Panel (Bring Your Own Key)`
 
 ### Summary (max 132 characters)
-Taken from `manifest.json` `description` (currently 124 characters):
+Taken from `manifest.json` `description` (currently 122 characters):
 
-> Chat with your own AI model (Gemini, Claude, OpenAI…) about the current tab: selection, page, other tabs, screenshot or PDF.
+> Chat with your own AI model about the current tab: selection, page, other tabs, screenshot or PDF. Bring your own API key.
 
 ### Category
 Productivity (alternative: Tools)
@@ -38,8 +38,8 @@ WHAT YOU CAN ATTACH TO A MESSAGE (you choose, per message)
 • PDF: the PDF open in the tab, sent in full, for models that support PDFs.
 Nothing is attached unless you tick it.
 
-WORKS WITH YOUR CHOICE OF PROVIDER
-Google Gemini, Anthropic Claude, OpenAI, DeepSeek, xAI Grok and Alibaba Qwen. Add the model IDs you want from each provider's docs and switch between them from the panel. OpenAI-compatible providers also accept a custom base URL.
+BRING YOUR OWN KEY
+Use the AI service you already have an API key for. Add the model IDs you want from your provider's docs and switch between them from the panel. Services with an OpenAI-compatible API also accept a custom base URL. The supported services are listed in the settings panel and the README.
 
 MADE FOR LONG, REAL USE
 • Saved chats with a History panel (text only; screenshots and PDFs are never stored).
@@ -58,13 +58,13 @@ PRIVACY BY DESIGN
 • Privacy policy: https://github.com/dragancristian2005/sidenote-extension/blob/main/PRIVACY.md
 
 GOOD TO KNOW
-• You need an API key from at least one provider. A chat subscription (ChatGPT Plus, Claude Pro, Google AI Pro…) does not include API access. API usage is billed by the provider, and some offer a free tier.
+• You need an API key from at least one provider. A chat subscription does not include API access. API usage is billed by the provider, and some offer a free tier.
 • What happens to your data after it reaches the provider is governed by that provider's terms, including whether free-tier data may be used for training or review. Avoid attaching sensitive pages.
 • Gemini users in the EEA, Switzerland or the UK: Google's API terms only allow Paid Services there, so use a key from a billing-enabled Google Cloud project, not a free-tier key.
 • The title and URL of the current tab are sent with every message so the model knows what you are asking about.
 • Browser-internal pages (brave://, chrome://) and the Web Store cannot be read.
 
-Sidenote is an independent project and is not affiliated with, endorsed by or sponsored by Google, Anthropic, OpenAI, DeepSeek, xAI or Alibaba. All product names are trademarks of their respective owners and are used only to describe compatibility.
+Sidenote is an independent project and is not affiliated with, endorsed by or sponsored by any AI provider it can connect to. All product names are trademarks of their respective owners.
 ```
 
 ### Graphic assets
@@ -73,7 +73,7 @@ Sidenote is an independent project and is not affiliated with, endorsed by or sp
   1. The panel next to an article with a question about the selection and a streamed answer. Caption: "Ask about what you're reading".
   2. A PDF open in the browser with the PDF pill ticked and an answer citing a page. Caption: "Chat with a PDF".
   3. The Tabs picker open with 2-3 tabs ticked. Caption: "Ask across several tabs".
-  4. The provider and model dropdowns open. Caption: "Gemini, Claude, OpenAI, DeepSeek, Grok, Qwen".
+  4. The provider and model dropdowns open. Caption: "Pick your model".
   5. The long-chat banner with "Summarize & continue", or the Privacy section. Caption: "Your key, your data".
   Use public, non-personal pages and no real API key on screen.
 - **Small promo tile 440×280:** optional but improves placement.
@@ -139,6 +139,9 @@ All data goes directly from the browser to the chosen provider; the developer op
 (If the reviewer cannot get a key, offer a temporary restricted key in the dashboard's "test instructions / credentials" field. Do not put a key in this repo.)
 
 ---
+
+## If rejected: keyword spam (23 Oct 2026)
+The first submission was rejected ("Keyword spam", ref Yellow Argon) for the description line listing six provider names. Fixed by removing provider name lists from the description, the manifest summary and the screenshot caption, and bumping to 0.1.1. Keep provider names to a minimum in all store metadata (description, summary, title, screenshots/promo images).
 
 ## Before you submit
 1. **Icons are done** (`icons/`, wired into the manifest). Regenerate with `python3 -I store/make_icons.py`.
